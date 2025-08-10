@@ -1,0 +1,157 @@
+-- Select all columns and rows from the products table
+SELECT * FROM Products;
+
+-- Get distinct brands available in the products table
+SELECT DISTINCT brand FROM products;
+
+-- Find rows where the size is missing (NULL)
+SELECT size FROM products WHERE size IS NULL;
+
+-- Calculate total revenue as sum of current price multiplied by stock quantity
+SELECT SUM(current_price * stock_quantity) AS total_revenue FROM products;
+
+-- Calculate average customer rating (rounded to 1 decimal), excluding NULL ratings
+SELECT CAST(ROUND(AVG(customer_rating), 2) AS DECIMAL(3,1)) AS avg_rating 
+FROM products 
+WHERE customer_rating IS NOT NULL;
+
+-- Find top 5 brands by total revenue generated (current price * stock quantity)
+SELECT TOP 5 brand, SUM(current_price * stock_quantity) AS revenue
+FROM products
+GROUP BY brand
+ORDER BY revenue DESC;
+
+-- Calculate monthly revenue and units sold, grouped by month
+SELECT top 5
+  DATEFROMPARTS(YEAR(purchase_date), MONTH(purchase_date), 1) AS month_start,
+  SUM(current_price * stock_quantity) AS revenue,
+  SUM(stock_quantity) AS units
+FROM products
+where DATEFROMPARTS(YEAR(purchase_date), MONTH(purchase_date), 1) is not null
+GROUP BY DATEFROMPARTS(YEAR(purchase_date), MONTH(purchase_date), 1)
+ORDER BY month_start;
+
+
+-- Count how many products have missing or empty categories
+SELECT COUNT(*) FROM Products WHERE category = '' OR category IS NULL;
+
+
+-- Identify duplicate product IDs
+SELECT product_id, COUNT(*) 
+FROM Products 
+GROUP BY product_id 
+HAVING COUNT(*) > 1;
+
+
+-- Distribution of customer ratings (count per rating)
+SELECT customer_rating, COUNT(*) 
+FROM Products 
+GROUP BY customer_rating
+ORDER BY customer_rating;
+
+
+-- Average customer rating by brand (rounded to 1 decimal)
+SELECT brand, cast(AVG(customer_rating) as decimal(2,1)) AS avg_rating
+FROM products
+GROUP BY brand
+ORDER BY avg_rating DESC;
+
+-- Return rate by season: total sold, returns count, and return rate calculation
+SELECT season,
+       COUNT(*) AS total_sold,
+       Cast(SUM(CASE WHEN is_returned = 1 THEN 1 ELSE 0 END)*1.0 / COUNT(*) as decimal(3,2)) AS return_rate
+FROM Products
+GROUP BY season;
+
+-- Average customer rating and total returns for each brand for products purchased in 2024
+select
+brand,
+avg(customer_rating) as avg_rating,
+sum(case when is_returned = 1 then 1 else 0 end) as total_returned_products
+from products
+where year(purchase_date) = 2024
+group by brand
+order by avg_rating desc;
+
+-- Total stock quantity and average markdown percentage by season (only seasons with markdown > 10%)
+select season,
+sum(stock_quantity) as total_stock_quantity,
+avg(markdown_percentage) as avg_markdown_percentage
+from products
+group by season
+having avg(markdown_percentage) > 10
+order by total_stock_quantity DESC
+
+-- Count distinct brands, average customer rating, and return percentage by category
+select 
+category,
+count(distinct brand) as brand,
+cast(round(avg(customer_rating),2) as decimal(2,1)) as avg_customer_rating,
+CAST(100.0 * sum(case when is_returned = 1 then 1 else 0 end) / COUNT(*) AS DECIMAL(5,2)) AS return_percentage
+from products
+group by category
+order by category
+
+
+-- Top 5 brands by average current price, considering only brands with more than 50 products sold
+SELECT top 5
+  brand,
+  ROUND(AVG(current_price), 2) AS avg_current_price,
+  COUNT(*) AS total_products_sold
+FROM products
+GROUP BY brand
+HAVING COUNT(*) > 50
+ORDER BY avg_current_price DESC;
+
+-- Monthly total sales count and average customer rating for the year 2023, formatted by year and month
+SELECT
+  LEFT(CONVERT(varchar, purchase_date, 23), 7) AS year_month,  -- 'YYYY-MM-DD' truncated to 'YYYY-MM'
+  COUNT(*) AS products_sold,
+  ROUND(AVG(customer_rating), 2) AS avg_customer_rating
+FROM products
+WHERE YEAR(purchase_date) = 2023
+GROUP BY LEFT(CONVERT(varchar, purchase_date, 23), 7)
+ORDER BY year_month ASC;
+
+-- Total products and average price by category, ordered by average price descending
+select
+category,
+count(*) as total_product,
+avg(current_price) as avg_price
+from products
+group by category
+order by avg_price desc;
+
+-- Total sales, returns, return rate, and average rating by brand, ordered by return rate descending
+SELECT
+  brand,
+  COUNT(*) AS total_sold,
+  sum(case when is_returned = 1 then 1 else 0 end) AS total_returns,
+  CAST(100.0 * sum(case when is_returned = 1 then 1 else 0 end) / COUNT(*) AS DECIMAL(5,2)) AS return_rate_percent,
+  ROUND(AVG(customer_rating), 2) AS avg_rating
+FROM products
+GROUP BY brand
+ORDER BY return_rate_percent DESC;
+
+-- Top 5 brands by average price with more than 50 products sold
+select top 5
+brand,
+avg(current_price) as avg_price,
+count(*) as total_product
+from products
+group by brand
+having count(*) > 50
+order by avg_price desc;
+
+-- Total stock quantity and average markdown by season (only seasons with average markdown > 10%), ordered by markdown
+select
+season,
+sum(stock_quantity) as total_quantity,
+avg(markdown_percentage) as avg_markdown
+from products
+group by season
+HAVING AVG(markdown_percentage) > 10
+order by avg_markdown 
+
+-- Get distinct colors available in products
+select distinct color from products
